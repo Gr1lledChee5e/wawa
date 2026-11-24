@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>This or That Ring Quiz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Instrument+Serif&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: one question per screen, big tappable cards, jewel-box blues with metal swatches as the only warm color. */
+:root{
+  --bg:#F3F5F9; --surface:#FFFFFF; --ink:#121629; --muted:#5B6379; --line:#DDE2EC;
+  --accent:#2D4FD0; --accent-soft:#E6EBFB; --gold:#D9A93A; --gemline:#6F7FAA;
+  --display:'Instrument Serif',Georgia,serif; --body:'DM Sans',system-ui,-apple-system,Segoe UI,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D1120; --surface:#161B30; --ink:#EEF1FA; --muted:#98A1BC; --line:#2A3250;
+    --accent:#8DA2FF; --accent-soft:#222B52; --gold:#E3B54A; --gemline:#A9B6E0; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D1120; --surface:#161B30; --ink:#EEF1FA; --muted:#98A1BC; --line:#2A3250;
+  --accent:#8DA2FF; --accent-soft:#222B52; --gold:#E3B54A; --gemline:#A9B6E0; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+.app{max-width:560px;margin:0 auto;padding:16px 16px 40px;display:flex;flex-direction:column;gap:18px;min-height:100vh}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:36px}
+.brand{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.linkbtn{background:none;border:0;color:var(--accent);font-weight:600;padding:8px 4px;font-size:15px}
+.linkbtn[hidden]{display:none}
+.prog{display:flex;flex-direction:column;gap:8px}
+.bars{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.bars i{height:5px;border-radius:3px;background:var(--line)}
+.bars i.done{background:var(--accent)}
+.bars i.now{background:var(--accent);opacity:.55}
+.proginfo{display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
+h1,h2{font-family:var(--display);font-weight:400;margin:0;text-wrap:balance;line-height:1.08}
+h1{font-size:44px}
+h2{font-size:32px}
+.lede{color:var(--muted);margin:0;max-width:46ch}
+.stage{display:flex;flex-direction:column;gap:16px;flex:1}
+.q small{display:block;color:var(--muted);font-size:14px;margin-top:6px}
+.cards{display:grid;gap:12px}
+.cards.g2{grid-template-columns:1fr 1fr}
+.cards.g3{grid-template-columns:1fr}
+.card{background:var(--surface);border:1.5px solid var(--line);border-radius:20px;padding:16px 12px 14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;min-width:0;min-height:200px;transition:transform .12s,border-color .12s,background .12s}
+.card:hover{border-color:var(--accent)}
+.card:active{transform:scale(.98)}
+.card.picked{border-color:var(--accent);background:var(--accent-soft)}
+.card:focus-visible,.linkbtn:focus-visible,.btn:focus-visible,.either:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.card .ic{width:104px;height:104px;display:flex;align-items:center;justify-content:center}
+.card .ic svg{width:100%;height:100%;overflow:visible}
+.card .lb{font-weight:600;font-size:17px;line-height:1.2}
+.card .sb{font-size:13px;color:var(--muted);line-height:1.35}
+.card.noic{min-height:150px}
+.g3 .card{flex-direction:row;text-align:left;min-height:0;padding:12px 16px;gap:16px;justify-content:flex-start}
+.g3 .card .ic{width:68px;height:68px;flex:none}
+.g3 .card .tx{display:flex;flex-direction:column;gap:2px}
+.either{background:none;border:1.5px dashed var(--line);border-radius:14px;padding:12px;color:var(--muted);font-weight:500}
+.either:hover{color:var(--ink);border-color:var(--muted)}
+.sw{width:72px;height:72px;border-radius:50%;box-shadow:inset 0 0 0 1.5px rgba(0,0,0,.12),inset 3px 4px 8px rgba(255,255,255,.55)}
+.g3 .sw{width:52px;height:52px}
+.btn{background:var(--accent);color:#fff;border:0;border-radius:14px;padding:14px 20px;font-weight:600;font-size:16px}
+:root[data-theme="dark"] .btn{color:#0D1120}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .btn{color:#0D1120}}
+.btn.ghost{background:transparent;color:var(--accent);border:1.5px solid var(--line)}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.hero{display:flex;flex-direction:column;gap:20px;padding-top:8px}
+.strip{display:grid;grid-template-columns:repeat(8,1fr);gap:6px}
+.strip svg{width:100%;height:auto}
+/* svg parts */
+.gemo{fill:url(#gemfill)}
+.gemo-line{fill:none;stroke:var(--gemline);stroke-width:2.2;stroke-linejoin:round}
+.fl{fill:none;stroke:var(--gemline);stroke-width:1.2;opacity:.6}
+.fl2 line{stroke:var(--gemline);stroke-width:1;opacity:.4}
+.gs{fill:url(#gemfill);stroke:var(--gemline);stroke-width:2;stroke-linejoin:round}
+.bandl{fill:none;stroke:var(--gold);stroke-linecap:round}
+.bandl.hi{stroke:#fff;opacity:.55;stroke-width:1.5}
+.dots{fill:none;stroke:var(--gemline);stroke-width:4;stroke-linecap:round;stroke-dasharray:.1 7}
+.dotsw{fill:none;stroke:#fff;stroke-linecap:round;stroke-dasharray:.1 5.5;opacity:.95}
+.prong{fill:var(--gold);stroke:rgba(0,0,0,.25);stroke-width:1}
+.prongl{stroke:var(--gold);stroke-width:2.4;stroke-linecap:round;fill:none}
+/* results */
+.res{display:flex;flex-direction:column;gap:20px}
+.big{display:flex;gap:18px;align-items:center}
+.big .bg{width:120px;flex:none}
+.big .bg svg{width:100%;height:auto;display:block}
+.sent{font-size:17px;margin:0}
+.panel{background:var(--surface);border:1.5px solid var(--line);border-radius:18px;padding:6px 16px}
+.panel h3{margin:14px 0 4px;font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.kv{display:grid;grid-template-columns:110px 1fr;gap:4px 12px;padding:8px 0;border-top:1px solid var(--line);font-size:15px}
+.kv:first-of-type{border-top:0}
+.qa{display:flex;flex-direction:column;gap:2px;padding:9px 0;border-top:1px solid var(--line);font-size:14px}
+.qa span{color:var(--muted)}
+.qa b{font-weight:600;font-size:15px}
+.kv span:first-child{color:var(--muted)}
+.kv b{font-weight:600}
+textarea{width:100%;min-height:200px;resize:vertical;background:var(--surface);color:var(--ink);border:1.5px solid var(--line);border-radius:14px;padding:12px;font:14px/1.5 var(--body)}
+.note{font-size:13px;color:var(--muted);min-height:18px;margin:0}
+@media (max-width:380px){h1{font-size:38px}.card .ic{width:88px;height:88px}.big .bg{width:96px}}
+@media (prefers-reduced-motion: reduce){.card{transition:none}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="gemfill" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#C6DAF8"/></linearGradient>
+</defs></svg>
+<main class="app" id="app"></main>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------- shapes ---------- */
+var SHAPES={
+  round:{label:'Round',sub:'Timeless brilliance',d:'M50 13 A37 37 0 1 1 49.99 13Z'},
+  oval:{label:'Oval',sub:'Elongating and elegant',d:'M50 8 C74 8 80 30 80 50 C80 72 70 92 50 92 C30 92 20 72 20 50 C20 30 26 8 50 8Z'},
+  pear:{label:'Pear',sub:'Teardrop, romantic',d:'M50 8 C58 28 78 46 78 66 C78 82 66 92 50 92 C34 92 22 82 22 66 C22 46 42 28 50 8Z'},
+  emerald:{label:'Emerald',sub:'Step-cut, Art Deco glamour',d:'M32 10 H68 L84 26 V74 L68 90 H32 L16 74 V26 Z',facet:'step'},
+  cushion:{label:'Cushion',sub:'Soft square, vintage feel',d:'M34 14 H66 C78 14 86 22 86 34 V66 C86 78 78 86 66 86 H34 C22 86 14 78 14 66 V34 C14 22 22 14 34 14Z'},
+  princess:{label:'Princess',sub:'Sharp, modern square',d:'M16 16 H84 V84 H16Z'},
+  marquise:{label:'Marquise',sub:'Long and dramatic',d:'M50 6 C78 32 78 68 50 94 C22 68 22 32 50 6Z'},
+  radiant:{label:'Radiant',sub:'Rectangular with extra sparkle',d:'M28 12 H72 L86 26 V74 L72 88 H28 L14 74 V26 Z'},
+  sround:{label:'Round',sub:'Small and classic',d:'M50 13 A37 37 0 1 1 49.99 13Z'},
+  baguette:{label:'Tapered baguette',sub:'Clean, architectural lines',d:'M34 10 H66 L56 90 H44 Z',facet:'step'},
+  half:{label:'Half-moon',sub:'Flat edge against the center stone',d:'M12 68 A38 38 0 0 1 88 68 Z'},
+  quarter:{label:'Quarter-moon',sub:'A wedge that hugs the center stone',d:'M24 82 V22 A60 60 0 0 1 84 82 Z'},
+  spear:{label:'Pear',sub:'Soft teardrop accents',d:'M50 8 C58 28 78 46 78 66 C78 82 66 92 50 92 C34 92 22 82 22 66 C22 46 42 28 50 8Z'},
+  trillion:{label:'Trillion',sub:'Bold triangular accents',d:'M50 12 L90 84 L10 84 Z'}
+};
+var gid=0;
+function gemG(key){
+  var s=SHAPES[key],id='cp'+(gid++),inner;
+  if(s.facet==='step'){
+    inner='<path d="'+s.d+'" transform="translate(50 50) scale(.72) translate(-50 -50)" class="fl"/><path d="'+s.d+'" transform="translate(50 50) scale(.44) translate(-50 -50)" class="fl"/>';
+  }else{
+    var ln='';[0,45,90,135].forEach(function(a){ln+='<line x1="50" y1="-10" x2="50" y2="110" transform="rotate('+a+' 50 50)"/>';});
+    inner='<g class="fl2">'+ln+'</g><path d="'+s.d+'" transform="translate(50 50) scale(.55) translate(-50 -50)" class="fl"/>';
+  }
+  return '<defs><clipPath id="'+id+'"><path d="'+s.d+'"/></clipPath></defs><path d="'+s.d+'" class="gemo"/><g clip-path="url(#'+id+')">'+inner+'</g><path d="'+s.d+'" class="gemo-line"/>';
+}
+function gem(key){return '<svg viewBox="0 0 100 100" aria-hidden="true">'+gemG(key)+'</svg>';}
+function sizeIcon(r){return '<svg viewBox="0 0 100 100" aria-hidden="true"><g transform="translate(50 50) scale('+(r/37)+') translate(-50 -50)">'+gemG('round')+'</g></svg>';}
+
+function gemSide(cx,top,w){
+  var g=w*.5,p=[[cx-w*.32,top],[cx+w*.32,top],[cx+g,top+w*.24],[cx,top+w*.78],[cx-g,top+w*.24]];
+  var pts=p.map(function(q){return q[0].toFixed(1)+','+q[1].toFixed(1);}).join(' ');
+  return '<polygon points="'+pts+'" class="gs"/><line x1="'+(cx-g)+'" y1="'+(top+w*.24)+'" x2="'+(cx+g)+'" y2="'+(top+w*.24)+'" class="fl"/>';
+}
+function ringSide(o){
+  o=o||{};
+  var top=o.top==null?12:o.top,w=o.w||32,band=o.band||6,s='';
+  s+='<circle cx="50" cy="72" r="24" class="bandl" style="stroke-width:'+band+'"/>';
+  if(o.halo==='visible')s+='<ellipse cx="50" cy="'+(top+8)+'" rx="'+(w*.5+9)+'" ry="9" class="dots"/>';
+  if(o.longProngs){
+    s+='<path class="prongl" d="M'+(50-w*.28)+' '+(top+w*.2)+' L44 50 M'+(50+w*.28)+' '+(top+w*.2)+' L56 50"/>';
+  }else if(o.prongs!==false){
+    s+='<path class="prongl" d="M'+(50-w*.26)+' '+(top+w*.4)+' L45 50 M'+(50+w*.26)+' '+(top+w*.4)+' L55 50"/>';
+  }
+  if(o.flank){
+    var fw=o.flank;
+    s+=gemSide(50-w*.5-fw*.5-5,top+w*.2,fw)+gemSide(50+w*.5+fw*.5+5,top+w*.2,fw);
+  }
+  s+=gemSide(50,top,w);
+  if(o.halo==='hidden')s+='<ellipse cx="50" cy="'+(top+w*.78+3)+'" rx="'+(w*.3)+'" ry="3" class="dots"/>';
+  return '<svg viewBox="0 0 100 100" aria-hidden="true">'+s+'</svg>';
+}
+function prongIcon(kind){
+  var s='<g transform="translate(50 50) scale(.72) translate(-50 -50)">'+gemG('round')+'</g>',i,a;
+  if(kind==='bezel'){s='<circle cx="50" cy="50" r="38" fill="none" stroke="var(--gold)" stroke-width="8"/>'+s;}
+  else{
+    var n=kind==='four'?4:6,off=kind==='four'?45:0;
+    for(i=0;i<n;i++){a=(off+i*360/n)*Math.PI/180;s+='<circle cx="'+(50+37*Math.cos(a)).toFixed(1)+'" cy="'+(50+37*Math.sin(a)).toFixed(1)+'" r="6" class="prong"/>';}
+  }
+  return '<svg viewBox="0 0 100 100" aria-hidden="true">'+s+'</svg>';
+}
+function bandIcon(o){
+  var w=o.w||6,s='';
+  s+='<circle cx="50" cy="60" r="30" class="bandl" style="stroke-width:'+w+'"/>';
+  if(o.finish==='polish')s+='<path d="M27 46 A30 30 0 0 1 42 33" class="bandl hi" fill="none"/>';
+  if(o.finish==='satin')s+='<circle cx="50" cy="60" r="30" class="bandl" style="stroke:rgba(0,0,0,.28);stroke-width:'+w+';stroke-dasharray:1 2.2"/>';
+  if(o.finish==='mill'){
+    s+='<circle cx="50" cy="60" r="'+(30-w/2-2.5)+'" fill="none" stroke="var(--gold)" stroke-width="2.4" stroke-linecap="round" stroke-dasharray=".1 4.2"/>';
+    s+='<circle cx="50" cy="60" r="'+(30+w/2+2.5)+'" fill="none" stroke="var(--gold)" stroke-width="2.4" stroke-linecap="round" stroke-dasharray=".1 4.2"/>';
+  }
+  if(o.pave==='half')s+='<path d="M20 60 A30 30 0 0 1 80 60" class="dotsw" style="stroke-width:'+(w*.7)+'"/>';
+  if(o.pave==='full')s+='<circle cx="50" cy="60" r="30" class="dotsw" style="stroke-width:'+(w*.7)+'"/>';
+  s+=gemSide(50,2,20);
+  return '<svg viewBox="0 0 100 100" aria-hidden="true">'+s+'</svg>';
+}
+function sw(css){return '<div class="sw" style="background:'+css+'"></div>';}
+
+/* ---------- questions ---------- */
+function O(id,label,sub,icon){return {id:id,label:label,sub:sub,icon:icon};}
+function shapeOpts(ids){return ids;}
+
+var SECTIONS=['The diamond','The metal','The setting','The band','The vibe'];
+var STEPS=[
+ {key:'sizeBand',sec:0,q:'How big a statement?',hint:'Round-diamond widths shown. Other shapes look a little different at the same weight.',opts:[
+   O('big','4 to 5 carats','Big and bold',sizeIcon(38)),
+   O('huge','6 to 7 carats','Enormous',sizeIcon(44))]},
+ {key:'size',sec:0,q:'Which one?',when:function(a){return a.sizeBand==='big';},opts:[
+   O('4 ct','Four carats','About 10.2 mm wide',sizeIcon(37)),
+   O('5 ct','Five carats','About 11 mm wide',sizeIcon(40))]},
+ {key:'size',sec:0,q:'Which one?',when:function(a){return a.sizeBand==='huge';},opts:[
+   O('6 ct','Six carats','About 11.7 mm wide',sizeIcon(42)),
+   O('7 ct','Seven carats','About 12.4 mm wide',sizeIcon(45))]},
+ {key:'shape',sec:0,q:'Which shape?',bracket:['round','oval','pear','emerald','cushion','princess','marquise','radiant'],gemshapes:true},
+ {key:'dcolor',sec:0,q:'Which diamond color?',opts:[
+   O('icy','Icy white','Colorless, grades D to F',sw('radial-gradient(circle at 35% 30%,#fff,#D6E6FF)')),
+   O('warm','Soft warm glow','Near-colorless, grades G to I',sw('radial-gradient(circle at 35% 30%,#FFFEF6,#F4E4B0)'))]},
+ {key:'origin',sec:0,q:'Where does it come from?',opts:[
+   O('natural','Natural','Mined from the earth',null),
+   O('lab','Lab-grown','The same diamond, grown in a lab',null)]},
+
+ {key:'mfamily',sec:1,q:'Which metal color?',opts:[
+   O('white','Silver-white','Cool and bright',sw('linear-gradient(135deg,#F6F7F9,#BCC2CB)')),
+   O('gold','Warm gold','Yellow or rose',sw('linear-gradient(135deg,#F2D77C,#C99A1E)'))]},
+ {key:'white',sec:1,q:'Platinum or white gold?',when:function(a){return a.mfamily==='white';},opts:[
+   O('platinum','Platinum','Naturally white and dense. Never needs re-plating.',sw('linear-gradient(135deg,#D3D7DE,#9DA4B1)')),
+   O('whitegold','White gold','Brighter white. Re-plated every few years.',sw('linear-gradient(135deg,#FAFAFB,#CDD1D7)'))]},
+ {key:'gold',sec:1,q:'Yellow or rose?',when:function(a){return a.mfamily==='gold';},opts:[
+   O('yellow','Yellow gold','The classic',sw('linear-gradient(135deg,#F0CF6A,#C99A1E)')),
+   O('rose','Rose gold','Warm and blushing',sw('linear-gradient(135deg,#F1C6B5,#CC8A76)'))]},
+ {key:'shadeBand',sec:1,q:'Light yellow or rich yellow?',when:function(a){return a.gold==='yellow';},opts:[
+   O('light','Lighter and subtler','Pale champagne to classic yellow',sw('linear-gradient(135deg,#F3E6B8,#DDBC5C)')),
+   O('rich','Richer and deeper','Warm, saturated gold',sw('linear-gradient(135deg,#E9BB43,#A86F00)'))]},
+ {key:'shade',sec:1,q:'Which shade?',hint:'Higher karat means more pure gold and a deeper color.',when:function(a){return a.shadeBand==='light';},opts:[
+   O('champagne','Pale champagne','Barely-there yellow (about 10k)',sw('linear-gradient(135deg,#F3E6B8,#E2CB86)')),
+   O('butter','Soft butter','Light, creamy yellow (14k)',sw('linear-gradient(135deg,#F2DFA0,#DDBC5C)')),
+   O('gold18','Classic yellow','True yellow gold (18k)',sw('linear-gradient(135deg,#EDC85C,#C99A1E)'))]},
+ {key:'shade',sec:1,q:'Which shade?',hint:'Higher karat means more pure gold and a deeper color.',when:function(a){return a.shadeBand==='rich';},opts:[
+   O('rich20','Warm rich gold','Deeper than classic (20k)',sw('linear-gradient(135deg,#E9BB43,#C08A12)')),
+   O('deep22','Deep buttery gold','Saturated, slightly orange (22k)',sw('linear-gradient(135deg,#E8B335,#B57E0A)')),
+   O('pure24','Pure gold','The deepest color there is (24k)',sw('linear-gradient(135deg,#E5A81E,#A86F00)'))]},
+
+ {key:'stones',sec:2,q:'Center stone alone, or with side stones?',opts:[
+   O('solitaire','Solitaire','Just the center diamond',ringSide()),
+   O('three','Three-stone','A diamond on each side of the center',ringSide({flank:13}))]},
+ {key:'halo',sec:2,q:'Any halo?',opts:[
+   O('none','No halo','Clean and simple',ringSide()),
+   O('visible','Classic halo','A ring of small diamonds around the center',ringSide({halo:'visible'})),
+   O('hidden','Hidden halo','Small diamonds tucked under the center stone',ringSide({halo:'hidden'}))]},
+ {key:'side',sec:2,q:'Which side-stone shape?',when:function(a){return a.stones==='three';},bracket:['sround','baguette','half','quarter','spear','trillion'],gemshapes:true},
+ {key:'sidesize',sec:2,q:'How big are the side stones?',when:function(a){return a.stones==='three';},opts:[
+   O('petite','Petite accents','Small, the center stays the star',ringSide({flank:10})),
+   O('substantial','Substantial','Closer in size to the center stone',ringSide({flank:19,w:30}))]},
+ {key:'prongs',sec:2,q:'How is the center stone held?',opts:[
+   O('four','Four prongs','Open and airy, shows the most diamond',prongIcon('four')),
+   O('six','Six prongs','Extra secure, a rounder look',prongIcon('six')),
+   O('bezel','Bezel','A smooth metal rim, snag-free',prongIcon('bezel'))]},
+ {key:'profile',sec:2,q:'How high does the diamond sit?',opts:[
+   O('low','Low and snug','Sits close to the finger. Great for everyday wear.',ringSide({top:30,w:32,prongs:false})),
+   O('high','Raised and dramatic','Lifted up for presence and light',ringSide({top:2,w:32,longProngs:true}))]},
+
+ {key:'width',sec:3,q:'How thick is the band?',opts:[
+   O('thin','Thin','About 1.5 mm, delicate',bandIcon({w:3})),
+   O('medium','Medium','About 2 mm, balanced',bandIcon({w:7})),
+   O('wide','Wide','3 mm or more, substantial',bandIcon({w:12}))]},
+ {key:'detail',sec:3,q:'Plain band or diamonds on it?',opts:[
+   O('plain','Plain metal','Smooth and uninterrupted',bandIcon({w:8})),
+   O('pave','Pavé diamonds','Tiny diamonds set into the band',bandIcon({w:8,pave:'half'}))]},
+ {key:'extent',sec:3,q:'How far do the diamonds go?',when:function(a){return a.detail==='pave';},opts:[
+   O('half','Halfway down','Sparkle on the top half',bandIcon({w:8,pave:'half'})),
+   O('full','All the way around','Diamonds on the whole band',bandIcon({w:8,pave:'full'}))]},
+ {key:'finish',sec:3,q:'Which metal finish?',opts:[
+   O('polish','High polish','Mirror shine',bandIcon({w:8,finish:'polish'})),
+   O('satin','Satin','Soft, brushed glow',bandIcon({w:8,finish:'satin'})),
+   O('mill','Milgrain','Tiny beaded edges, vintage detail',bandIcon({w:8,finish:'mill'}))]},
+
+ {key:'vibe',sec:4,q:'Which feels most like her?',opts:[
+   O('classic','Classic','Timeless, never goes out of style',null),
+   O('modern','Modern','Clean, sharp, a little bold',null),
+   O('vintage','Vintage','Romantic, detailed, a little old-world',null)]}
+];
+
+/* ---------- state ---------- */
+var app=document.getElementById('app');
+var state,hist,lock=false,saved=null,pendingSave=false,STORE='ringquiz.v1';
+async function saveRemote(a,brief,log){
+  var el=document.getElementById('saved');
+  function say(t){if(el)el.textContent=t;}
+  try{
+    var c=window.claude;
+    var db=c&&c.use?await c.use('db'):null;
+    if(!db){say('Saved on this device only. Copy the brief below to send it.');return;}
+    var uid='guest'+Date.now();
+    try{var u=await c.use('user');if(u&&u.id)uid=String(await u.id());}catch(e){}
+    await db.doc('results/'+uid).set({answers:a,brief:brief,log:log,at:Date.now()});
+    say('Your answers were saved.');
+  }catch(e){say('Could not save automatically. Copy the brief below to send it.');}
+}
+try{saved=JSON.parse(localStorage.getItem(STORE)||'null');}catch(e){saved=null;}
+
+function fresh(){state={i:-1,answers:{},bracket:null,log:[]};hist=[];lock=false;}
+fresh();
+
+function normalize(b){
+  for(;;){
+    if(b.cur.length===1)return;
+    if(b.i>=b.cur.length){b.cur=b.next;b.next=[];b.i=0;b.round++;continue;}
+    if(b.i===b.cur.length-1){b.next.push(b.cur[b.i]);b.i++;continue;}
+    return;
+  }
+}
+function advance(){
+  var j=state.i+1;
+  while(j<STEPS.length&&STEPS[j].when&&!STEPS[j].when(state.answers))j++;
+  state.i=j;state.bracket=null;
+  if(j>=STEPS.length){
+    pendingSave=true;
+    try{localStorage.setItem(STORE,JSON.stringify({answers:state.answers,log:state.log}));saved={answers:state.answers,log:state.log};}catch(e){}
+  }
+}
+function snap(){hist.push(JSON.stringify(state));}
+
+function pick(id){
+  if(lock)return;
+  var st=STEPS[state.i];
+  lock=true;
+  var el=app.querySelector('[data-id="'+id+'"]');
+  if(el)el.classList.add('picked');
+  setTimeout(function(){
+    snap();
+    if(st.bracket){
+      var b=state.bracket,a=b.cur[b.i],c=b.cur[b.i+1],loser=(id===a)?c:a;
+      state.log.push({q:st.q+' ('+SHAPES[a].label+' or '+SHAPES[c].label+')',a:SHAPES[id].label});
+      if(b.cur.length===2)state.answers[st.key+'Runner']=loser;
+      b.next.push(id);b.i+=2;normalize(b);
+      if(b.cur.length===1){state.answers[st.key]=b.cur[0];advance();}
+    }else{
+      var al='Love both, or no preference';
+      st.opts.forEach(function(o){if(o.id===id)al=o.label;});
+      state.log.push({q:st.q+' ('+st.opts.map(function(o){return o.label;}).join(' or ')+')',a:al});
+      state.answers[st.key]=id;
+      advance();
+    }
+    lock=false;render();window.scrollTo(0,0);
+  },230);
+}
+function back(){
+  if(lock||!hist.length)return;
+  state=JSON.parse(hist.pop());render();window.scrollTo(0,0);
+}
+
+/* ---------- rendering ---------- */
+function cardHTML(o,idx){
+  var ic=o.icon?'<div class="ic">'+o.icon+'</div>':'';
+  return '<button class="card'+(o.icon?'':' noic')+'" data-id="'+o.id+'" data-n="'+(idx+1)+'">'+ic+'<div class="tx"><div class="lb">'+o.label+'</div>'+(o.sub?'<div class="sb">'+o.sub+'</div>':'')+'</div></button>';
+}
+function progressHTML(sec,n,extra){
+  var bars='';
+  for(var k=0;k<SECTIONS.length;k++)bars+='<i class="'+(k<sec?'done':k===sec?'now':'')+'"></i>';
+  return '<div class="prog"><div class="bars">'+bars+'</div><div class="proginfo"><span>'+SECTIONS[sec]+'</span><span>'+extra+'</span></div></div>';
+}
+function top(canBack){
+  return '<div class="top"><span class="brand">This or that</span><button class="linkbtn" id="back"'+(canBack?'':' hidden')+'>Back</button></div>';
+}
+
+function render(){
+  if(state.i<0)return renderWelcome();
+  if(state.i>=STEPS.length)return renderResult();
+  var st=STEPS[state.i],opts,extra,title=st.q,hint=st.hint||'';
+  if(st.bracket){
+    if(!state.bracket){state.bracket={cur:st.bracket.slice(),next:[],i:0,round:1};normalize(state.bracket);}
+    var b=state.bracket,ids=[b.cur[b.i],b.cur[b.i+1]];
+    opts=ids.map(function(id){var s=SHAPES[id];return O(id,s.label,s.sub,gem(id));});
+    extra=b.cur.length<=2?'Final':(b.cur.length<=4?'Semi-final':'Round 1');
+  }else{
+    opts=st.opts;extra='Question '+(hist.length+1);
+  }
+  var cls=opts.length===3?'g3':'g2';
+  app.innerHTML=top(hist.length>0)+progressHTML(st.sec,0,extra)+
+    '<div class="stage"><div class="q"><h2>'+title+'</h2>'+(hint?'<small>'+hint+'</small>':'')+'</div>'+
+    '<div class="cards '+cls+'">'+opts.map(cardHTML).join('')+'</div>'+
+    (st.bracket?'':'<button class="either" id="either">Love both, or no preference</button>')+'</div>';
+  bind();
+}
+function bind(){
+  var bk=document.getElementById('back');if(bk)bk.onclick=back;
+  Array.prototype.forEach.call(app.querySelectorAll('.card'),function(c){c.onclick=function(){pick(c.getAttribute('data-id'));};});
+  var ei=document.getElementById('either');if(ei)ei.onclick=function(){pick('any');};
+}
+function renderWelcome(){
+  var strip='';['round','oval','pear','emerald','cushion','princess','marquise','radiant'].forEach(function(k){strip+=gem(k);});
+  app.innerHTML='<div class="top"><span class="brand">This or that</span><span></span></div>'+
+    '<div class="hero"><div class="strip">'+strip+'</div><h1>Ring edition</h1>'+
+    '<p class="lede">Twenty or so quick picks between two things. Tap the one you like better. There are no wrong answers, and you can tap "love both" any time.</p>'+
+    '<div class="row"><button class="btn" id="start">Start</button>'+(saved&&saved.answers?'<button class="btn ghost" id="last">See last results</button>':'')+'</div></div>';
+  document.getElementById('start').onclick=function(){fresh();advance();render();};
+  var l=document.getElementById('last');if(l)l.onclick=function(){fresh();state.answers=saved.answers;state.log=saved.log||[];state.i=STEPS.length;render();};
+}
+
+/* ---------- results ---------- */
+function stepFor(key){for(var i=0;i<STEPS.length;i++)if(STEPS[i].key===key)return STEPS[i];}
+function optLabel(key,id){
+  if(id==null||id==='any')return null;
+  if(SHAPES[id])return SHAPES[id].label;
+  var found=null;STEPS.forEach(function(s){if(s.key===key&&s.opts)s.opts.forEach(function(o){if(o.id===id)found=o.label;});});
+  return found;
+}
+function lc(s){return s?s.charAt(0).toLowerCase()+s.slice(1):s;}
+function build(a){
+  var m={};
+  m.carat=a.size&&a.size!=='any'?a.size:(a.sizeBand==='big'?'4 to 5 ct':a.sizeBand==='huge'?'6 to 7 ct':null);
+  m.shape=optLabel('shape',a.shape);
+  m.runner=optLabel('shape',a.shapeRunner);
+  m.dcolor={icy:'icy white (D to F)',warm:'soft warm (G to I)'}[a.dcolor]||null;
+  m.origin={natural:'natural',lab:'lab-grown'}[a.origin]||null;
+  var metal=null;
+  if(a.mfamily==='white')metal=optLabel('white',a.white);
+  if(a.mfamily==='gold'){
+    if(a.gold==='rose')metal='Rose gold';
+    else if(a.gold==='yellow'){metal='Yellow gold'+(a.shade&&a.shade!=='any'?', '+({champagne:'pale champagne shade (about 10k)',butter:'soft butter shade (14k)',gold18:'classic shade (18k)',rich20:'warm rich shade (20k)',deep22:'deep buttery shade (22k)',pure24:'pure gold shade (24k)'}[a.shade]):'');}
+    else metal='Gold (yellow or rose undecided)';
+  }
+  m.metal=metal;
+  var side=a.stones==='three'?'three-stone'+(a.side?' with '+lc(optLabel('side',a.side))+' side stones'+(a.sidesize&&a.sidesize!=='any'?' ('+lc(optLabel('sidesize',a.sidesize))+')':''):''):(a.stones==='solitaire'?'solitaire':null);
+  m.setting=[side,a.halo&&a.halo!=='any'?lc(optLabel('halo',a.halo)):null,a.prongs&&a.prongs!=='any'?lc(optLabel('prongs',a.prongs)):null,a.profile&&a.profile!=='any'?lc(optLabel('profile',a.profile))+' profile':null].filter(Boolean);
+  var det=a.detail==='plain'?'plain metal':(a.detail==='pave'?'pavé diamonds'+(a.extent&&a.extent!=='any'?' '+({half:'halfway down',full:'all the way around'}[a.extent]):''):null);
+  m.band=[a.width&&a.width!=='any'?lc(optLabel('width',a.width))+' band':null,det,a.finish&&a.finish!=='any'?lc(optLabel('finish',a.finish)):null].filter(Boolean);
+  m.vibe=optLabel('vibe',a.vibe);
+  return m;
+}
+function briefText(m){
+  var L=['RING BRIEF'];
+  var c=[m.carat,m.shape?lc(m.shape):null].filter(Boolean).join(' ');
+  var cs=[c||null,m.dcolor,m.origin].filter(Boolean).join(', ');
+  if(cs)L.push('Center stone: '+cs+(m.runner?' (second choice: '+lc(m.runner)+')':''));
+  if(m.metal)L.push('Metal: '+m.metal);
+  if(m.setting.length)L.push('Setting: '+m.setting.join(', '));
+  if(m.band.length)L.push('Band: '+m.band.join(', '));
+  if(m.vibe)L.push('Style: '+lc(m.vibe));
+  return L.join('\n');
+}
+function row(k,v){return v?'<div class="kv"><span>'+k+'</span><b>'+v+'</b></div>':'';}
+function renderResult(){
+  var a=state.answers,m=build(a);
+  var big=a.shape?gem(a.shape):gem('round');
+  var sent=[];
+  if(m.carat||m.shape)sent.push('A '+[m.carat,m.shape?lc(m.shape):'diamond'].filter(Boolean).join(' ')+(m.metal?' in '+lc(m.metal.split(',')[0]):''));
+  if(m.setting.length)sent.push(m.setting.slice(0,2).join(' with '));
+  if(m.vibe)sent.push('leaning '+lc(m.vibe));
+  var sentence=sent.length?sent.join(', ')+'.':'Not much was decided. Try the quiz again with fewer "love both" taps.';
+  var brief=briefText(m);
+  var full=brief+(state.log.length?'\n\nEVERY ANSWER\n'+state.log.map(function(r){return r.q.replace(/ \(([^)]*)\)$/,' [$1]')+': '+r.a;}).join('\n'):'');
+  var mailto='mailto:riley2yee@gmail.com?subject='+encodeURIComponent('Ring quiz results')+'&body='+encodeURIComponent(full);
+  app.innerHTML=top(false)+
+   '<div class="res"><div class="big"><div class="bg">'+big+'</div><div><h2>Her ring blueprint</h2></div></div>'+
+   '<p class="sent">'+sentence+'</p><p class="note" id="saved"></p>'+
+   '<div class="panel"><h3>The diamond</h3>'+
+     row('Size',m.carat)+row('Shape',m.shape?m.shape+(m.runner?' (then '+lc(m.runner)+')':''):null)+row('Color',m.dcolor)+row('Origin',m.origin?m.origin.charAt(0).toUpperCase()+m.origin.slice(1):null)+
+   '<h3>The metal</h3>'+row('Metal',m.metal)+
+   '<h3>The setting</h3>'+row('Details',m.setting.join(', '))+
+   '<h3>The band</h3>'+row('Details',m.band.join(', '))+
+   '<h3>The vibe</h3>'+row('Style',m.vibe)+
+   '</div>'+
+   (state.log.length?'<div class="panel"><h3>Every answer</h3>'+state.log.map(function(r){return '<div class="qa"><span>'+r.q+'</span><b>'+r.a+'</b></div>';}).join('')+'</div>':'')+
+   '<div><textarea id="brief" readonly aria-label="Ring brief">'+full+'</textarea><p class="note" id="note"></p></div>'+
+   '<div class="row"><a class="btn" id="mail" href="'+mailto+'" style="text-decoration:none">Email my results</a><button class="btn ghost" id="copy">Copy results</button><button class="btn ghost" id="again">Start over</button></div></div>';
+  if(pendingSave){pendingSave=false;saveRemote(a,brief,state.log);}
+  document.getElementById('again').onclick=function(){fresh();render();};
+  document.getElementById('copy').onclick=function(){
+    var ta=document.getElementById('brief'),note=document.getElementById('note');
+    function fb(){ta.focus();ta.select();note.textContent='Select the text above and copy it.';}
+    try{navigator.clipboard.writeText(ta.value).then(function(){note.textContent='Copied.';},fb);}catch(e){fb();}
+  };
+}
+
+document.addEventListener('keydown',function(e){
+  if(state.i<0||state.i>=STEPS.length)return;
+  var n=parseInt(e.key,10);
+  if(n>=1&&n<=3){var c=app.querySelector('.card[data-n="'+n+'"]');if(c)pick(c.getAttribute('data-id'));}
+  if(e.key==='ArrowLeft'&&e.altKey)back();
+});
+
+render();
+})();
+</script>
+</body>
+</html>
